@@ -1,0 +1,18 @@
+[Unit]
+Description = My service
+Wants=network-online.target
+After=network-online.target
+After=rc-local.service
+
+[Service]
+Type=forking
+TimeoutSec=900
+Restart=on-failure
+RestartSec=3
+ExecStart = /home/pi/startup/test.sh
+
+[Install]
+WantedBy=multi-user.target
+
+
+
