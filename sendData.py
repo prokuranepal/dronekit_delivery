@@ -7,10 +7,8 @@ import threading
 import json
 import thread
 import time
-import requests
 from pymavlink import mavutil
 from socketIO_client_nexus import SocketIO, BaseNamespace
-from requests.exceptions import ConnectionError
 import mission as mi
 import distance as dis
 #Set up option parsing to get connection string
@@ -42,12 +40,36 @@ if not connection_string:
     sitl = dronekit_sitl.start_default()
     connection_string = sitl.connection_string()
 
-# Connect to the Vehicle. 
+# Connect to the Vehicle.
 #   Set `wait_ready=True` to ensure default attributes are populated before `connect()` returns.
 print("\nConnecting to vehicle on: %s" % connection_string)
 vehicle = connect(connection_string, wait_ready=True)
-print (str(vehicle))
 vehicle.wait_ready('autopilot_version')
+magcal_progess = []
+def set_servo(vehicle, servo_number, pwm_value):
+    pwm_value_int = int(pwm_value)
+    msg = vehicle.message_factory.command_long_encode(0, 0,mavutil.mavlink.MAV_CMD_DO_SET_SERVO,0,servo_number,pwm_value_int,0,0,0,0,0)
+    vehicle.send_mavlink(msg)
+
+def magcal(vehicle):
+    msg = vehicle.message_factory.command_long_encode(0,0,mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,0,0,0,1,0,0,0,0)
+    vehicle.send_mavlink(msg)
+    print('magcal started')
+
+def accelcal(vehicle):
+    msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,0,0, 0, 0, 0, 1, 0, 0)
+    vehicle.send_mavlink(msg)
+      
+def magaccept(vehicle):
+    msg = vehicle.message_factory.command_long_encode(0, 0,mavutil.mavlink.MAV_CMD_DO_ACCEPT_MAG_CAL, 0, 0, 0, 1,0,0,0,0)
+    vehicle.send_mavlink(msg)
+    print ("magcal accepted")
+# print (dir(vehicle.message_factory))
+
+# magcal(vehicle)
+# time.sleep(120)
+#set_servo(vehicle,9,1500)
+magcal_progess = []
 
 def read_username_password():
     d={}
@@ -59,14 +81,13 @@ def read_username_password():
     return d
 
 try:
-    #socket = SocketIO('http://192.168.1.119', 3000, wait_for_connection=False)#establish socket connection to desired server
-    
+    #socket1 = SocketIO('http://192.168.1.81', 3000, verify=True) #establish socket connection to desired server
     socket1 = SocketIO('https://nicwebpage.herokuapp.com', verify =True)
     socket = socket1.define(BaseNamespace,'/pulchowk')
     #socket.emit("joinPiPulchowk")
     socket.emit("joinPi")
     #socket.emit("usernamePassword",read_username_password())
-except ConnectionError:
+except Exception as e:
     print('The server is down. Try again later.')
 
 def set_mode_LAND(var):
@@ -88,7 +109,6 @@ def set_mode_RTL(var):
     if fix_type >1:
         vehicle.mode=VehicleMode("RTL")
         print ("Vehicle mode set to RTL")
-     
 
 waypoint={}
 def on_mission_download(var): #this function is called once the server requests to download the mission file, to send mission to server
@@ -108,30 +128,30 @@ def on_mission_download(var): #this function is called once the server requests 
     if bool(waypoint):#checking if the mission file has been downloaded from pixhawk
         socket.emit('waypoints',waypoint)
         print("Mission downloaded by user")
+        print (str(waypoint))
     else:
         error={'context':'GPS/Mission','msg':'GPS error OR no mission file received!!'}
-        socket.emit("error",error)
+        socket.emit("errors",error)
 
 def update_mission(var):
     try:
-        up.upload_mission(vehicle,'/home/pi/mission/'+str(var))
+        up.upload_mission(vehicle,'/home/sa/mission/'+str(var))
         print (str(var), "loaded")
     except Exception as e:
         error={'context':'GPS/Mission','msg':'Mission FIle Could not be loaded'}
-        socket.emit("error",error)
+        socket.emit("errors",error)
 
-    
+
 flight_checker=False #to check that the fly command is given successfully only once
 def on_initiate_flight(var):
     global flight_checker #reuired global, as this is a socket funciton, got no idea how to pass parameters to socket function
-    
     try:
         height =vehicle.location.global_relative_frame.alt
         if vehicle.is_armable and height <= 4: # and not flight_checker: #checking if vehicle is armable and fly command is genuine
             socket.emit("success","flight_success")
             print("FLIGHT INITIATED BY USER")
             arm.arm_and_takeoff(vehicle,4) #arm and takeoff upto 4 meters
-            vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto	
+            vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto
             # flight_checker=True ## True if succesful flight, no further flight commands will be acknowledged
             flight_checker=True
         else:
@@ -142,17 +162,16 @@ def on_initiate_flight(var):
                 pass
             if fix_type > 1:
                 vehicle.mode=VehicleMode("AUTO")
-                print ("Vehicle mode set to AUTO") 
-            
-            
+                print ("Vehicle mode set to AUTO")
+
+
     except Exception as e:
         #print(e)
         error={'context':'Prearm','msg':'Pre-arm check failed!!!'}
-        socket.emit("error",error)
+        socket.emit("errors",error)
 
 # Get all vehicle attributes (state)
 print("\nGet all vehicle attribute values:")
-
 
 
 def send_data(threadName, delay):
@@ -163,107 +182,109 @@ def send_data(threadName, delay):
     divisor=1
     last_vel=0
     data = {}
+   
+    # magcal(vehicle)
     while 1:
-        #print("data sending ")
+        # print("data sending ")
         try:
             loc = vehicle.location.global_frame
         except Exception as e:
             error={'context':'loc','msg':'Location not found!!!'}
-            socket.emit("error",error)
+            socket.emit("errors",error)
         try:
             data["numSat"] = vehicle.gps_0.satellites_visible
         except Exception as e:
             error={'context':'numSat','msg':'numSat not found!!'}
-            socket.emit("error",error)
-        try:           
+            socket.emit("errors",error)
+        try:
             data["hdop"] = vehicle.gps_0.eph
         except Exception as e:
             error={'context':'loc','msg':'Location not found!!!'}
-            socket.emit("error",error)
+            socket.emit("errors",error)
         try:
             data["fix"] = vehicle.gps_0.fix_type
         except Exception as e:
             error={'context':'fix','msg':'fix type not found!!!'}
-            socket.emit("error",error)
+            socket.emit("errors",error)
         try:
             data["lat"] = format(loc.lat,'.15f')
             data["lng"] = format(loc.lon,'.15f')
         except Exception as e:
             error={'context':'format','msg':'Long lat format error!!!'}
-            socket.emit("error",error)
+            socket.emit("errors",error)
         try:
             vel = vehicle.velocity
         except Exception as e:
             error={'context':'vel','msg':'velocity not found!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             status = str(vehicle.system_status)
         except Exception as e:
             error={'context':'status','msg':'Status not found!!!'}
-            socket.emit("error",error)
+            socket.emit("errors",error)
         try:
             data["conn"] = 'True'
         except Exception as e:
             error={'context':'loc','msg':'Location not found!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["arm"] = vehicle.armed
         except Exception as e:
             error={'context':'arm','msg':'Arm not found!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["ekf"] = vehicle.ekf_ok
         except Exception as e:
             error={'context':'ekf','msg':'ekf not found!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["mode"] = vehicle.mode.name
         except Exception as e:
             error={'context':',mode','msg':'Mode not found!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["alt"] = format(loc.alt, '.2f')
         except Exception as e:
             error={'context':'alt','msg':'altitude format error!!!'}
-            socket.emit("error",error)
+            socket.emit("errors",error)
         try:
             data["altr"] = vehicle.location.global_relative_frame.alt
         except Exception as e:
             error={'context':'altr','msg':'rel alt not found!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["head"] = format(vehicle.heading, 'd')
         except Exception as e:
             error={'context':'head','msg':'head not found!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["as"]=format(vehicle.airspeed, '.3f')
         except Exception as e:
             error={'context':'as_format','msg':'as format error!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["lidar"] = vehicle.rangefinder.distance
         except Exception as e:
             error={'context':'lidar','msg':'Lidar not found!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["gs"] = format(vehicle.groundspeed, '.3f')
         except Exception as e:
             error={'context':'gs','msg':'gs format error!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["status"] = status[13:]
         except Exception as e:
             error={'context':'status','msg':'status not found!!!'}
-            socket.emit("error",error)
-        try:    
+            socket.emit("errors",error)
+        try:
             data["volt"] = format(vehicle.battery.voltage, '.2f')
         except Exception as e:
             error={'context':'volt','msg':'voltage not found!!!'}
-            socket.emit("error",error)
+            socket.emit("errors",error)
 
-            
-        print(datetime.datetime.now())
+
+        # print(datetime.datetime.now())
         if  checker:#only if waypoints are successfully read
 
             if vehicle.armed and check: # check is used to receive time of arming only once, at first arming
@@ -312,8 +333,6 @@ def send_data(threadName, delay):
                 print("GPS error OR no mission file received!!!")
         socket1.wait(seconds=0.2) #sends or waits for socket activities in every seconds specified
                 #socket.wait()
-        
-
 
 def start(): #to perform all the operations in a thread
     try:
@@ -323,16 +342,36 @@ def start(): #to perform all the operations in a thread
         #calculate_dist()
     except Exception as e:
         error={'context':'thread','msg':'thread error!!!'}
-        socket.emit("error",error)
+        socket.emit("errors",error)
 
+number_of_compass=[]
+no_comp=[]
 
-
-start()
 @vehicle.on_message('*')
 def listener(self, name, message):
-    print ("message:",message)
+    global no_comp
+    global number_of_compass
+    if message.get_type() == 'MAG_CAL_PROGRESS':
+        comp_id=message.compass_id
+        if comp_id not in number_of_compass:
+            number_of_compass.append(comp_id)
+        print (message.compass_id,message.completion_pct)       
+    if message.get_type() == 'MAG_CAL_REPORT':
+        if message.cal_status == mavutil.mavlink.MAG_CAL_SUCCESS:
+            comp_id2=message.compass_id
+            if comp_id2 not in no_comp:
+                no_comp.append(comp_id2)
+        else:
+            print("Mag cal failed")
+        if  set(number_of_compass)== set(no_comp) and len(number_of_compass)!=0 and len(no_comp)!=0:
+            magaccept(vehicle)
+            del number_of_compass[:]
+            del no_comp[:]
+    if message.get_type() =='STATUSTEXT':
+        print(message.text)
 
+         
+start()
 
 while True:
-
     pass

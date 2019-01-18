@@ -1,0 +1,12 @@
+
+Connecting to vehicle on: /dev/ttyACM0
+
+Get all vehicle attribute values:
+inside start
+magcal started
+EKF primary changed:0
+EKF primary changed:1
+True True
+magaccepted
+
+Connecting to vehicle on: /dev/ttyACM0
