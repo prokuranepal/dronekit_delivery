@@ -51,18 +51,20 @@ def set_servo(vehicle, servo_number, pwm_value):
     msg = vehicle.message_factory.command_long_encode(0, 0,mavutil.mavlink.MAV_CMD_DO_SET_SERVO,0,servo_number,pwm_value_int,0,0,0,0,0)
     vehicle.send_mavlink(msg)
 
-def magcal(vehicle):
+def magcal_start():
     msg = vehicle.message_factory.command_long_encode(0,0,mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,0,0,0,1,0,0,0,0)
     vehicle.send_mavlink(msg)
     print('magcal started')
 
-def accelcal(vehicle):
+def accelcal():
     msg = vehicle.message_factory.command_long_encode(0, 0, mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,0,0, 0, 0, 0, 1, 0, 0)
     vehicle.send_mavlink(msg)
       
-def magaccept(vehicle):
+def magaccept():
     msg = vehicle.message_factory.command_long_encode(0, 0,mavutil.mavlink.MAV_CMD_DO_ACCEPT_MAG_CAL, 0, 0, 0, 1,0,0,0,0)
     vehicle.send_mavlink(msg)
+    error={'context':'magcal','msg':'magcal successful'}
+    socket.emit("errors",error) 
     print ("magcal accepted")
 # print (dir(vehicle.message_factory))
 
@@ -83,7 +85,7 @@ def read_username_password():
 try:
     socket1 = SocketIO('http://192.168.1.81', 3000, verify=True) #establish socket connection to desired server
     #socket1 = SocketIO('https://nicwebpage.herokuapp.com', verify =True)
-    socket = socket1.define(BaseNamespace,'/JT602')
+    socket = socket1.define(BaseNamespace,'/JT603')
     #socket.emit("joinPiPulchowk")
     socket.emit("joinPi")
     #socket.emit("usernamePassword",read_username_password())
@@ -248,6 +250,21 @@ def send_data(threadName, delay):
             error={'context':'alt','msg':'altitude format error!!!'}
             socket.emit("errors",error)
         try:
+            data["roll"] = vehicle.attitude.roll
+        except Exception as e:
+            error={'context':'roll','msg':'roll not found!!!'}
+            socket.emit("errors",error)
+        try:
+            data["pitch"] = vehicle.attitude.pitch
+        except Exception as e:
+            error={'context':'pitch','msg':'pitch not found!!!'}
+            socket.emit("errors",error)
+        try:
+            data["yaw"] = vehicle.attitude.yaw
+        except Exception as e:
+            error={'context':'yaw','msg':'yaw not found!!!'}
+            socket.emit("errors",error)
+        try:
             data["altr"] = vehicle.location.global_relative_frame.alt
         except Exception as e:
             error={'context':'altr','msg':'rel alt not found!!!'}
@@ -316,7 +333,10 @@ def send_data(threadName, delay):
             socket.on('RTL',set_mode_RTL)
         except Exception:
             pass
-
+        try:
+            socket.on('magcal',magcal_start)
+        except Exception:
+            pass
         try:
             socket.on('LAND',set_mode_LAND)
         except Exception:
@@ -355,7 +375,10 @@ def listener(self, name, message):
         comp_id=message.compass_id
         if comp_id not in number_of_compass:
             number_of_compass.append(comp_id)
-        print (message.compass_id,message.completion_pct)       
+        print (message.compass_id,message.completion_pct)  
+        #completed='compass '+str(message.compass_id)+': ' +str(message.completion_pct)+ '% completed'
+        #error={'context':'magcal','msg':completed}
+        #socket.emit("errors",error)    
     if message.get_type() == 'MAG_CAL_REPORT':
         if message.cal_status == mavutil.mavlink.MAG_CAL_SUCCESS:
             comp_id2=message.compass_id
@@ -364,11 +387,14 @@ def listener(self, name, message):
         else:
             print("Mag cal failed")
         if  set(number_of_compass)== set(no_comp) and len(number_of_compass)!=0 and len(no_comp)!=0:
-            magaccept(vehicle)
+            magaccept()
             del number_of_compass[:]
             del no_comp[:]
     if message.get_type() =='STATUSTEXT':
-        error={'context':'STATUS','msg':str(message.text)}
+        if message.text=='flight plan received':
+            error={'context':'android','msg':str(message.text)}     
+        else:
+            error={'context':'STATUS','msg':str(message.text)}
         socket.emit("errors",error)
         print (message.text)
          
