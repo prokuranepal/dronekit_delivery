@@ -83,9 +83,11 @@ def read_username_password():
     return d
 
 try:
-    socket1 = SocketIO('http://192.168.1.81', 3000, verify=True) #establish socket connection to desired server
-    #socket1 = SocketIO('https://nicwebpage.herokuapp.com', verify =True)
-    socket = socket1.define(BaseNamespace,'/JT603')
+    #socket1 = SocketIO('http://192.168.1.81', 3000, verify=True) #establish socket connection to desired server
+    #socket1 = SocketIO('http://202.52.0.160', verify=True) #establish socket connection to desired server
+    socket1 = SocketIO('https://nicwebpage.herokuapp.com', verify =True)
+    #socket = socket1.define(BaseNamespace,'/JT603')
+    socket = socket1.define(BaseNamespace,'/pulchowk')
     #socket.emit("joinPiPulchowk")
     socket.emit("joinPi")
     #socket.emit("usernamePassword",read_username_password())
@@ -152,6 +154,17 @@ def on_initiate_flight(var):
         if vehicle.is_armable and height <= 4: # and not flight_checker: #checking if vehicle is armable and fly command is genuine
             socket.emit("success","flight_success")
             print("FLIGHT INITIATED BY USER")
+            #arm.arm_and_takeoff(vehicle,4) #arm and takeoff upto 4 meters
+            # Copter should arm in GUIDED mode
+            '''
+            UNCOMMENT FOR PLANE TAKEOFF
+            vehicle.mode    = VehicleMode("GUIDED")
+            vehicle.armed   = True
+            # Confirm vehicle armed before attempting to take off
+            while not vehicle.armed:
+                print (" Waiting for arming...")
+                time.sleep(1)
+            vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto'''
             arm.arm_and_takeoff(vehicle,4) #arm and takeoff upto 4 meters
             vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto
             # flight_checker=True ## True if succesful flight, no further flight commands will be acknowledged
