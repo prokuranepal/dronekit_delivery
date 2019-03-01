@@ -83,11 +83,11 @@ def read_username_password():
     return d
 
 try:
-    #socket1 = SocketIO('http://192.168.1.81', 3000, verify=True) #establish socket connection to desired server
+    socket1 = SocketIO('http://192.168.1.81', 3000, verify=True) #establish socket connection to desired server
     #socket1 = SocketIO('http://202.52.0.160', verify=True) #establish socket connection to desired server
-    socket1 = SocketIO('https://nicwebpage.herokuapp.com', verify =True)
-    #socket = socket1.define(BaseNamespace,'/JT603')
-    socket = socket1.define(BaseNamespace,'/pulchowk')
+    #socket1 = SocketIO('https://nicwebpage.herokuapp.com', verify =True)
+    socket = socket1.define(BaseNamespace,'/JT601')
+    #socket = socket1.define(BaseNamespace,'/pulchowk')
     #socket.emit("joinPiPulchowk")
     socket.emit("joinPi")
     #socket.emit("usernamePassword",read_username_password())

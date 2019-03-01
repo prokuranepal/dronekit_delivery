@@ -1,0 +1,18 @@
+[Unit]
+Description=Drone
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/home/pi/startup/env.progconf
+ExecStart=/usr/bin/python -u sendData.py $ARG1
+WorkingDirectory=/home/pi/dronekit_delivery
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+
+
