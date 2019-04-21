@@ -189,7 +189,7 @@ def on_initiate_flight(var):
 print("\nGet all vehicle attribute values:")
 
 
-def send_data():
+def send_data(threadName, delay):
     global waypoint #needs to be global as it is accessed by on_mission_download, socket function
     global checker #flag to start the functions to calculate total distance and eta once the mission is received from pixhawk
     total=0
@@ -411,7 +411,7 @@ def listener(self, name, message):
         socket.emit("errors",error)
         print (message.text)
          
-send_data()
+start()
 
 while True:
     pass
