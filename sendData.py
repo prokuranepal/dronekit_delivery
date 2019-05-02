@@ -311,7 +311,7 @@ def send_data():
         except Exception as e:
             error={'context':'volt','msg':'voltage not found!!!'}
             socket.emit("errors",error)
-        print(data["head"])
+        print(data["head"],datetime.datetime.now())
         if not vehicle.armed:
             time1=0
         # print(datetime.datetime.now())
@@ -413,5 +413,3 @@ def listener(self, name, message):
          
 send_data()
 
-while True:
-    pass
