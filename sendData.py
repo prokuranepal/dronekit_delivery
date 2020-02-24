@@ -83,10 +83,10 @@ def read_username_password():
     return d
 
 try:
-    #socket1 = SocketIO('http://192.168.1.81', 3000, verify=True) #establish socket connection to desired server
-    socket1 = SocketIO('http://drone.nicnepal.org', verify=True) #establish socket connection to desired server
-    #socket1 = SocketIO('https://nicwebpage.herokuapp.com', verify =True)
-    socket = socket1.define(BaseNamespace,'/JT602')
+    #socket1 = SocketIO('http://192.168.1.100', 3000, verify=True) #establish socket connection to desired server
+    #socket1 = SocketIO('http://drone.nicnepal.org', verify=True) #establish socket connection to desired server
+    socket1 = SocketIO('https://nicwebpage.herokuapp.com', verify =True)
+    socket = socket1.define(BaseNamespace,'/JT601')
     #socket = socket1.define(BaseNamespace,'/pulchowk')
     #socket.emit("joinPiPulchowk")
     socket.emit("joinPi")
@@ -160,14 +160,23 @@ def on_initiate_flight(var):
             print("FLIGHT INITIATED BY USER")
             #arm.arm_and_takeoff(vehicle,4) #arm and takeoff upto 4 meters
             # Copter should arm in GUIDED mode
-            vehicle.mode    = VehicleMode("GUIDED")
+            #vehicle.mode    = VehicleMode("GUIDED")
             # Confirm vehicle armed before attempting to take off
             #while not vehicle.armed:
                 #print (" Waiting for arming...")
                 #time.sleep(1)
-            arm.arm_and_takeoff(vehicle,4) #arm and takeoff upto 4 meters
-            vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto
+            #arm.arm_and_takeoff(vehicle,4) #arm and takeoff upto 4 meters
+            #vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto
             # flight_checker=True ## True if succesful flight, no further flight commands will be acknowledged
+           
+            #UNCOMMENT FOR PLANE TAKEOFF
+            vehicle.mode    = VehicleMode("GUIDED")
+            vehicle.armed   = True
+            # Confirm vehicle armed before attempting to take off
+            while not vehicle.armed:
+                print (" Waiting for arming...")
+                time.sleep(1)
+            vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto'''
             flight_checker=True
         else:
             fix_type=0
@@ -311,7 +320,8 @@ def send_data():
         except Exception as e:
             error={'context':'volt','msg':'voltage not found!!!'}
             socket.emit("errors",error)
-        print(data["head"],datetime.datetime.now())
+        print(data["head"],datetime.datetime.now().strftime("%H:%M:%S"))
+        # print(data["head"],datetime.datetime.now())
         if not vehicle.armed:
             time1=0
         # print(datetime.datetime.now())
@@ -363,7 +373,7 @@ def send_data():
                 checker=True # switch value of checker such that mission is downloaded only once from pixhawk, and condition to calculate eta is met
             except Exception as e:
                 print(e)
-                print("GPS error OR no mission file received!!!")
+                print("GPS error(fix type<0) OR no mission file received!!!")
         socket1.wait(seconds=0.2) #sends or waits for socket activities in every seconds specified
                 #socket.wait()
 
