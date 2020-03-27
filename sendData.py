@@ -83,7 +83,7 @@ def read_username_password():
     return d
 
 try:
-    #socket1 = SocketIO('http://192.168.1.100', 3000, verify=True) #establish socket connection to desired server
+    #socket1 = SocketIO('http://10.42.0.200', 3000, verify=True) #establish socket connection to desired server
     #socket1 = SocketIO('http://drone.nicnepal.org', verify=True) #establish socket connection to desired server
     socket1 = SocketIO('https://nicwebpage.herokuapp.com', verify =True)
     socket = socket1.define(BaseNamespace,'/JT601')
