@@ -1,4 +1,4 @@
-/*
+'''
 
    This program is free software: you can redistribute it and/or modify
 
@@ -17,9 +17,8 @@
    GNU General Public License for more details.
 
    See LICENSE file in the project root for full license information./>.
+'''
 
- */
- 
 from __future__ import print_function
 from dronekit import connect, VehicleMode, LocationGlobal, LocationGlobalRelative
 import arm_takeoff as arm

@@ -1,9 +1,28 @@
+'''
 
+   This program is free software: you can redistribute it and/or modify
+
+   it under the terms of the GNU General Public License as published by
+
+   the Free Software Foundation, either version 3 of the License, or
+
+   any later version.
+
+   This program is distributed in the hope that it will be useful,
+
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+   GNU General Public License for more details.
+
+   See LICENSE file in the project root for full license information./>.
+'''
 import math
 
 
 def degreesToRadians(degrees): #function to convert degrees to radians, required for conversion of gps coordinates into distance
-    return degrees * math.pi / 180;
+    return degrees * math.pi / 180
 
 def distanceInmBetweenEarthCoordinates(lat1, lon1, lat2, lon2): #function to calculate distance between two gps coordinates
     #earthRadiusm = 6378137;#radius of the earth in meters
