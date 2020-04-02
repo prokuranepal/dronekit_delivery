@@ -8,7 +8,7 @@ This repo contains python code to establish a socket connection with server by w
 
 
 ## Method of Operation
-* The dronekit delivery software requires a node server to be setup to establish a successful socket connection and communicate. Follow the instructions as suggested from <a> https://github.com/prokuranepal/Drone-Monitoring-server.git </a> and setup the server first. 
+* The dronekit delivery software requires a node server to be setup to establish a successful socket connection and communicate. Follow the instructions as suggested from <a> https://github.com/prokuranepal/Drone-Monitoring-server/tree/development </a> and setup the server first. 
 
 * After successful server setup then you can proceed on working of dronekit delivery. Install all python dependency packages
 ```
