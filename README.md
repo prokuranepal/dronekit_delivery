@@ -21,7 +21,7 @@ This repo contains python code to establish a socket connection with server by w
 
     REPLACE IT WITH THE IP/DOMAIN OF YOUR SERVER
 
-    socket1 = SocketIO('http://10.42.0.200', 3000, verify=True) 
+    socket1 = SocketIO('http://10.42.0.200', 3000, verify=True) #here 3000 is port number 
 ```
 
 * Make sure you are connected to the internet. Now you are good to go. Run:
