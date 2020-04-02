@@ -26,7 +26,6 @@ import datetime
 import math
 import threading
 import json
-import thread
 import time
 from pymavlink import mavutil
 from socketIO_client_nexus import SocketIO, BaseNamespace

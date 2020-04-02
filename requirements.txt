@@ -1,0 +1,15 @@
+certifi==2019.11.28
+chardet==3.0.4
+dronekit==2.9.2
+dronekit-sitl==3.3.0
+future==0.18.2
+idna==2.9
+lxml==4.5.0
+monotonic==1.5
+psutil==5.7.0
+pymavlink==2.4.7
+requests==2.23.0
+six==1.14.0
+socketIO-client-nexus==0.7.6
+urllib3==1.25.8
+websocket-client==0.57.0
