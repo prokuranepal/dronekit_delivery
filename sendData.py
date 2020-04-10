@@ -60,7 +60,7 @@ if not connection_string:
     sitl = dronekit_sitl.start_default()
     connection_string = sitl.connection_string()
 
-# Connect to the Vehicle.
+# Connect to the Vehicle..
 #   Set `wait_ready=True` to ensure default attributes are populated before `connect()` returns.
 print("\nConnecting to vehicle on: %s" % connection_string)
 vehicle = connect(connection_string, wait_ready=True)
@@ -161,7 +161,7 @@ def on_mission_download(var): #this function is called once the server requests 
 def update_mission(var):
     global checker
     try:
-        up.upload_mission(vehicle,'/home/sa/mission/'+str(var))
+        up.upload_mission(vehicle,str(var))
         print (str(var), "loaded")
         checker=False
         print("checker",checker)
@@ -180,24 +180,25 @@ def on_initiate_flight(var):
             print("FLIGHT INITIATED BY USER")
             #arm.arm_and_takeoff(vehicle,4) #arm and takeoff upto 4 meters
             # Copter should arm in GUIDED mode
-            #vehicle.mode    = VehicleMode("GUIDED")
-            # Confirm vehicle armed before attempting to take off
-            #while not vehicle.armed:
-                #print (" Waiting for arming...")
-                #time.sleep(1)
-            #arm.arm_and_takeoff(vehicle,4) #arm and takeoff upto 4 meters
-            #vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto
-            # flight_checker=True ## True if succesful flight, no further flight commands will be acknowledged
-           
-            #UNCOMMENT FOR PLANE TAKEOFF
             vehicle.mode    = VehicleMode("GUIDED")
             vehicle.armed   = True
             # Confirm vehicle armed before attempting to take off
             while not vehicle.armed:
                 print (" Waiting for arming...")
                 time.sleep(1)
-            vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto'''
-            flight_checker=True
+            arm.arm_and_takeoff(vehicle,4) #arm and takeoff upto 4 meters
+            vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto
+            flight_checker=True ## True if succesful flight, no further flight commands will be acknowledged
+           
+            #UNCOMMENT FOR PLANE TAKEOFF
+            # vehicle.mode    = VehicleMode("GUIDED")
+            # vehicle.armed   = True
+            # # Confirm vehicle armed before attempting to take off
+            # while not vehicle.armed:
+            #     print (" Waiting for arming...")
+            #     time.sleep(1)
+            # vehicle.mode = VehicleMode("AUTO") #switch vehicle mode to auto'''
+            # flight_checker=True
         else:
             fix_type=0
             try:
