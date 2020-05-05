@@ -35,15 +35,15 @@ import distance as dis
 import argparse
 import upload_mission as up
 
-#parser = argparse.ArgumentParser(description='Print out vehicle state information. Connects to SITL on local PC by default.')
-#parser.add_argument('--connect',
+# parser = argparse.ArgumentParser(description='Print out vehicle state information. Connects to SITL on local PC by default.')
+# parser.add_argument('--connect',
 #                   help="vehicle connection target string. If not specified, SITL automatically started and used.")
-#args = parser.parse_args()
+# args = parser.parse_args()
 
-#connection_string = args.connect
-#print("\nConnecting to vehicle on: ,s" , connection_string)
+# connection_string = args.connect
+# print("\nConnecting to vehicle on: %s" , connection_string)
 
-#vehicle = connect(connection_string, wait_ready=True)d={}
+# vehicle = connect(connection_string, wait_ready=True)
 
 import argparse
 parser = argparse.ArgumentParser(description='Print out vehicle state information. Connects to SITL on local PC by default.')
@@ -357,7 +357,7 @@ def send_data():
                     vel=float((last_vel+vehicle.groundspeed)/divisor) #calculate the average velocity upto current time
                     print (flight_time, total)
                     est=float((float(total)-flight_time*vel)/3.5) #estimate eta, with assummed velocity 3.5 m/s
-                    #print(est)
+                    print("est",est)
                     if est<=0.5: #making sure eta is not less thatn 0.5
                         est=0
                     data["est"]=est
