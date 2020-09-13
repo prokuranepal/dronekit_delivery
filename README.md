@@ -74,6 +74,53 @@ WantedBy=multi-user.target
 ```
 
 
+#### socket listening endpoints (socket.on)
+* "homePosition" //to listen for home position request and emit home position on request
+* "getMission" //to read mission from pixhawk and emit to server, here calls <b> on_mission_download</b> 
+* "initiateFlight" //to initiate take off and fly in auto
+* "mission" // update or upload mission from server to pixhawk, here calls update_mission, which in turn calls <b>add_mission</b>
+![](add_mission.png)
+![](on_mission_download.png)
+
+#### Socket emitting endpoints (socket.emit)
+* "getMission" //emit mission downloaded from pixhawk to server(same endpoint as socket.on)
+* "homePosition" // emit home position to server once on initialization and afterwards on request
+
+#### Mission Format for both send and receive
+```
+	{
+  name: 'asasas',
+  radius: '20',
+  speed: '20',
+  home: 'Biratanagr',
+  destination: '5f2bb9d7e0d78272f38eb279',
+  waypoints: [
+    {
+      altitude: 0,
+      radius: 0,
+      action: 'takeoff',
+      lat: 26.818175084140602,
+      lng: 87.28325418453437
+    },
+    {
+      altitude: '20',
+      radius: '20',
+      action: 'waypoint',
+      lat: 26.817065334581564,
+      lng: 87.28149404510873
+    },
+    {
+      altitude: 0,
+      radius: 0,
+      action: 'land',
+      lat: 26.817773279520665,
+      lng: 87.27882163829784
+    }
+  ]
+}
+```
+
+* Not: For emitting mission to server, for now just waypoints will suffice
 
 
 

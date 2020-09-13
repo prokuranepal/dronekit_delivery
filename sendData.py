@@ -89,21 +89,23 @@ def add_mission(mission_waypoints, speed):
     The function assumes vehicle.commands matches the vehicle mission state 
     (you must have called download at least once in the session and after clearing the mission)
     """	
-
     cmds = vehicle.commands
-
     print(" Clear any existing commands")
     cmds.clear() 
-    
     print(" Define/add new commands.")
     # Add new commands. The meaning/order of the parameters is documented in the Command class. 
-     
     #Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
-
+    cmds.add(Command( 0, 0, 0, 
+    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
+    mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
     #Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
     for i in range(len(mission_waypoints)):
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, mission_waypoints[i]["lat"], mission_waypoints[i]["lng"],float(mission_waypoints[i]["altitude"])))
+        cmds.add(Command( 0, 0, 0, 
+        mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+         mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, 
+         mission_waypoints[i]["lat"], 
+         mission_waypoints[i]["lng"],
+         float(mission_waypoints[i]["altitude"])))
     print(" Upload new commands to vehicle")
     cmds.upload()
 
@@ -192,6 +194,7 @@ def set_mode_RTL(var):
 
 waypoint={}
 checker=False
+
 def on_mission_download(var): #this function is called once the server requests to download the mission file, to send mission to server
     print("DOWNLOAD MISSION COMMAND BY USER",var)
     mission_all={}
@@ -220,6 +223,7 @@ def on_mission_download(var): #this function is called once the server requests 
         error={'context':'GPS/Mission','msg':'GPS error OR no mission file received!!'}
         socket.emit("errors",error)
     return waypoint 
+    
 def update_mission(var):
     global checker
     print("mission",var)
