@@ -146,10 +146,10 @@ magcal_progess = []
 #     return d
 
 socket1 = SocketIO('http://8ba16b03989a.ngrok.io', verify =True)
-socket = socket1.define(BaseNamespace,'/JT601')
+socket = socket1.define(BaseNamespace,'/JT602')
 while not socket._connected:
     socket1 = SocketIO('http://8ba16b03989a.ngrok.io', verify =True)
-    socket = socket1.define(BaseNamespace,'/JT601')
+    socket = socket1.define(BaseNamespace,'/JT602')
 socket.emit("joinDrone")
 
 # try:
