@@ -147,12 +147,14 @@ magcal_progess = []
 #     	r=r+1
 #     return d
 
-socket1 = SocketIO('http://8ba16b03989a.ngrok.io', verify =True)
+socket1 = SocketIO('dms.prokurainnovations.com',3001, verify =True)
 socket = socket1.define(BaseNamespace,'/JT601')
 while not socket._connected:
-    socket1 = SocketIO('http://8ba16b03989a.ngrok.io', verify =True)
+    # socket1 = SocketIO('http://8ba16b03989a.ngrok.io', verify =True)
+    socket1 = SocketIO('dms.prokurainnovations.com',3001, verify =True)
     socket = socket1.define(BaseNamespace,'/JT601')
-socket.emit("joinDrone")
+socket.emit("joinDrone",'5fa2839a9827ab1a65bf2cd8')
+homePos= None
 
 # try:
 #     #socket1 = SocketIO('http://10.42.0.200', 3000, verify=True) #establish socket connection to desired server
@@ -194,7 +196,6 @@ def set_mode_RTL(var):
 
 waypoint={}
 checker=False
-
 def on_mission_download(var): #this function is called once the server requests to download the mission file, to send mission to server
     print("DOWNLOAD MISSION COMMAND BY USER",var)
     mission_all={}
@@ -204,7 +205,7 @@ def on_mission_download(var): #this function is called once the server requests 
 
     missionlist=up.download_mission(vehicle)
     for cmd in missionlist:
-        if cmd.command!=22:
+        if cmd.command!=22  and cmd.command!=3000 and cmd.command!=183:
             waypoint[inc]= {
             'lat': cmd.x,
             'lng': cmd.y,
@@ -227,7 +228,7 @@ def on_mission_download(var): #this function is called once the server requests 
 def update_mission(var):
     global checker
     print("mission",var)
-    add_mission(var["waypoints"],7)
+    add_mission(var["mission"]['waypoints'],7)
     # try:
     #     up.upload_mission(vehicle,str(var))
     #     print (str(var), "loaded")
@@ -306,6 +307,8 @@ def send_data():
     global checker #flag to start the functions to calculate total distance and eta once the mission is received from pixhawk
     total=0
     check = True
+    flight_flag=False
+    servo_flag=False
     divisor=1
     last_vel=0
     data = {}
@@ -429,6 +432,30 @@ def send_data():
             socket.emit("errors",error)
         print(data["head"],datetime.datetime.now().strftime("%H:%M:%S"))
         # print(data["head"],datetime.datetime.now())
+        try:
+            if vehicle.armed and vehicle.location.global_relative_frame.alt >= 5:
+                socket.emit("flight_start", 1)
+                flight_flag=True
+                print("mission started, drone on its way",loc.alt)
+        except Exception as e:
+            pass
+        try:
+            if vehicle.commands.next >= 6 and servo_flag == False:
+                socket.emit('payloadDrop',1)
+                print(vehicle.commands.next,"package dropped iosndfidnsf sdif nsianfo nasfoidn saoifnoid snafiodnsoaifniosdaniofgnsdaiogndsiognipasndgpimsadpogmsapogpodsamgopdsmgpomsdapogmsapodmgposmadgpo!")
+                servo_flag=True
+            else: 
+                print("package dopped failure ionadsfinsaif sndfoanfinsafkinbrinwvfimivdfwviemvvfeoivqsa;cloxzicvnzo")
+        except Exception as e:
+            print("Exception on payload Drop", str(e))
+            pass
+        try:
+            if not vehicle.armed and flight_flag:
+                socket.emit("flight_start",0)
+                print("mission completed")
+                flight_flag=False
+        except Exception as e:
+            pass
         if not vehicle.armed:
             time1=0
         # print(datetime.datetime.now())
@@ -460,7 +487,7 @@ def send_data():
         except Exception:
             print ("error positions")
         try:
-            socket.on('RTL',set_mode_RTL)
+            socket.on('rtl',set_mode_RTL)
         except Exception:
             pass
         try:
@@ -468,7 +495,7 @@ def send_data():
         except Exception:
             pass
         try:
-            socket.on('LAND',set_mode_LAND)
+            socket.on('land',set_mode_LAND)
         except Exception:
             pass
         socket.on('reconnect', on_reconnect)
@@ -526,6 +553,7 @@ def listener(self, name, message):
             del number_of_compass[:]
             del no_comp[:]
     if message.get_type() =='STATUSTEXT':
+        print ("message printed",message.text)
         if message.text=='flight plan received':
             error={'context':'android','msg':str(message.text)}     
         else:

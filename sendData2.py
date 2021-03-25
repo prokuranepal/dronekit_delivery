@@ -89,23 +89,26 @@ def add_mission(mission_waypoints, speed):
     The function assumes vehicle.commands matches the vehicle mission state 
     (you must have called download at least once in the session and after clearing the mission)
     """	
+    print ("waypoint", mission_waypoints)
+    try:
+        cmds = vehicle.commands
 
-    cmds = vehicle.commands
+        print(" Clear any existing commands")
+        cmds.clear() 
+        
+        print(" Define/add new commands.")
+        # Add new commands. The meaning/order of the parameters is documented in the Command class. 
+        
+        #Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
 
-    print(" Clear any existing commands")
-    cmds.clear() 
-    
-    print(" Define/add new commands.")
-    # Add new commands. The meaning/order of the parameters is documented in the Command class. 
-     
-    #Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
-
-    #Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
-    for i in range(len(mission_waypoints)):
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, mission_waypoints[i]["lat"], mission_waypoints[i]["lng"],float(mission_waypoints[i]["altitude"])))
-    print(" Upload new commands to vehicle")
-    cmds.upload()
+        #Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
+        for i in range(len(mission_waypoints)):
+            cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, mission_waypoints[i]["lat"], mission_waypoints[i]["lng"],float(mission_waypoints[i]["altitude"])))
+        print(" Upload new commands to vehicle")
+        cmds.upload()
+    except Exception as e:
+        print("failed to upload mission")
 
 
 
@@ -145,12 +148,12 @@ magcal_progess = []
 #     	r=r+1
 #     return d
 
-socket1 = SocketIO('http://8ba16b03989a.ngrok.io', verify =True)
-socket = socket1.define(BaseNamespace,'/JT602')
+socket1 = SocketIO('http://9a5d0aed70c4.ngrok.io', verify =True)
+socket = socket1.define(BaseNamespace,'/JT603')
 while not socket._connected:
-    socket1 = SocketIO('http://8ba16b03989a.ngrok.io', verify =True)
-    socket = socket1.define(BaseNamespace,'/JT602')
-socket.emit("joinDrone")
+    socket1 = SocketIO('http://9a5d0aed70c4.ngrok.io', verify =True)
+    socket = socket1.define(BaseNamespace,'/JT603')
+socket.emit("joinDrone",'5fa2839a9827ab1a65bf2cd8')
 
 # try:
 #     #socket1 = SocketIO('http://10.42.0.200', 3000, verify=True) #establish socket connection to desired server
@@ -169,7 +172,8 @@ def set_mode_LAND(var):
     try:
         fix_type=vehicle.gps_0.fix_type
     except Exception as e:
-        pass
+        print (str(e))
+    print("LAND command received")
     if fix_type >1:
         while(vehicle.mode.name!="LAND"):
             vehicle.mode=VehicleMode("LAND")
@@ -182,7 +186,8 @@ def set_mode_RTL(var):
     try:
         fix_type=vehicle.gps_0.fix_type
     except Exception as e:
-        pass
+        print(str(e))
+    print("RTL command received")
     if fix_type >1:
         vehicle.mode=VehicleMode("RTL")
         print ("Vehicle mode set to RTL")
@@ -201,7 +206,8 @@ def on_mission_download(var): #this function is called once the server requests 
 
     missionlist=up.download_mission(vehicle)
     for cmd in missionlist:
-        if cmd.command!=22:
+        if cmd.command!=22 and cmd.command!=3000 and cmd.command!=183 :
+            print ("mission File ","cmd X", cmd.x,"cmd Y", cmd.y, cmd.command)
             waypoint[inc]= {
             'lat': cmd.x,
             'lng': cmd.y,
@@ -223,7 +229,7 @@ def on_mission_download(var): #this function is called once the server requests 
 def update_mission(var):
     global checker
     print("mission",var)
-    add_mission(var["waypoints"],7)
+    add_mission(var["mission"]['waypoints'],7)
     # try:
     #     up.upload_mission(vehicle,str(var))
     #     print (str(var), "loaded")
@@ -302,12 +308,15 @@ def send_data():
     global checker #flag to start the functions to calculate total distance and eta once the mission is received from pixhawk
     total=0
     check = True
+    flight_flag=False
     divisor=1
     last_vel=0
+    servo_flag=False
     data = {}
     global homePos
     # magcal(vehicle)
     a =0
+    loc=0
     while True:
     # while a<=30:    
         a=a+1
@@ -316,6 +325,23 @@ def send_data():
             loc = vehicle.location.global_frame
         except Exception as e:
             error={'context':'loc','msg':'Location not found!!!'}
+            socket.emit("errors",error)
+        try:
+            data["lat"] = format(loc.lat,'.15f')
+            data["lng"] = format(loc.lon,'.15f')
+        except Exception as e:
+            error={'context':'format','msg':'Long lat format error!!!'}
+            socket.emit("errors",error)
+        try:
+            data["altr"] = vehicle.location.global_relative_frame.alt
+        except Exception as e:
+            error={'context':'altr','msg':'rel alt not found!!!'}
+            socket.emit("errors",error)
+        try:
+            data["alt"] = format(loc.alt, '.2f')
+        except Exception as e:
+            data["alt"] =0
+            error={'context':'alt','msg':'altitude format error!!!'}
             socket.emit("errors",error)
         try:
             data["numSat"] = vehicle.gps_0.satellites_visible
@@ -332,12 +358,55 @@ def send_data():
         except Exception as e:
             error={'context':'fix','msg':'fix type not found!!!'}
             socket.emit("errors",error)
+
         try:
-            data["lat"] = format(loc.lat,'.15f')
-            data["lng"] = format(loc.lon,'.15f')
+            data["head"] = format(vehicle.heading, 'd')
         except Exception as e:
-            error={'context':'format','msg':'Long lat format error!!!'}
+            error={'context':'head','msg':'head not found!!!'}
             socket.emit("errors",error)
+        try:
+            data["gs"] = format(vehicle.groundspeed, '.3f')
+        except Exception as e:
+            error={'context':'gs','msg':'gs format error!!!'}
+            socket.emit("errors",error)
+        try:
+            data["as"]=format(vehicle.airspeed, '.3f')
+        except Exception as e:
+            error={'context':'as_format','msg':'as format error!!!'}
+            socket.emit("errors",error)
+        try:
+            data["mode"] = vehicle.mode.name
+        except Exception as e:
+            error={'context':',mode','msg':'Mode not found!!!'}
+            socket.emit("errors",error) 
+        try:
+            data["ekf"] = vehicle.ekf_ok
+        except Exception as e:
+            error={'context':'ekf','msg':'ekf not found!!!'}
+            socket.emit("errors",error)
+        try:
+            status = str(vehicle.system_status)
+            data["status"] = status[13:]
+        except Exception as e:
+            error={'context':'status','msg':'status not found!!!'}
+            socket.emit("errors",error)
+        try:
+            data["lidar"] = vehicle.rangefinder.distance
+        except Exception as e:
+            error={'context':'lidar','msg':'Lidar not found!!!'}
+            socket.emit("errors",error)
+        try:
+            data["volt"] = format(vehicle.battery.voltage, '.2f')
+        except Exception as e:
+            error={'context':'volt','msg':'voltage not found!!!'}
+            socket.emit("errors",error)
+        try:
+            data["arm"] = vehicle.armed
+        except Exception as e:
+            error={'context':'arm','msg':'Arm not found!!!'}
+            socket.emit("errors",error)    
+        data["est"] = 0
+
         try:
             vel = vehicle.velocity
         except Exception as e:
@@ -353,26 +422,9 @@ def send_data():
         except Exception as e:
             error={'context':'loc','msg':'Location not found!!!'}
             socket.emit("errors",error)
-        try:
-            data["arm"] = vehicle.armed
-        except Exception as e:
-            error={'context':'arm','msg':'Arm not found!!!'}
-            socket.emit("errors",error)
-        try:
-            data["ekf"] = vehicle.ekf_ok
-        except Exception as e:
-            error={'context':'ekf','msg':'ekf not found!!!'}
-            socket.emit("errors",error)
-        try:
-            data["mode"] = vehicle.mode.name
-        except Exception as e:
-            error={'context':',mode','msg':'Mode not found!!!'}
-            socket.emit("errors",error)
-        try:
-            data["alt"] = format(loc.alt, '.2f')
-        except Exception as e:
-            error={'context':'alt','msg':'altitude format error!!!'}
-            socket.emit("errors",error)
+
+
+
         try:
             data["roll"] = vehicle.attitude.roll
         except Exception as e:
@@ -388,43 +440,32 @@ def send_data():
         except Exception as e:
             error={'context':'yaw','msg':'yaw not found!!!'}
             socket.emit("errors",error)
-        try:
-            data["altr"] = vehicle.location.global_relative_frame.alt
-        except Exception as e:
-            error={'context':'altr','msg':'rel alt not found!!!'}
-            socket.emit("errors",error)
-        try:
-            data["head"] = format(vehicle.heading, 'd')
-        except Exception as e:
-            error={'context':'head','msg':'head not found!!!'}
-            socket.emit("errors",error)
-        try:
-            data["as"]=format(vehicle.airspeed, '.3f')
-        except Exception as e:
-            error={'context':'as_format','msg':'as format error!!!'}
-            socket.emit("errors",error)
-        try:
-            data["lidar"] = vehicle.rangefinder.distance
-        except Exception as e:
-            error={'context':'lidar','msg':'Lidar not found!!!'}
-            socket.emit("errors",error)
-        try:
-            data["gs"] = format(vehicle.groundspeed, '.3f')
-        except Exception as e:
-            error={'context':'gs','msg':'gs format error!!!'}
-            socket.emit("errors",error)
-        try:
-            data["status"] = status[13:]
-        except Exception as e:
-            error={'context':'status','msg':'status not found!!!'}
-            socket.emit("errors",error)
-        try:
-            data["volt"] = format(vehicle.battery.voltage, '.2f')
-        except Exception as e:
-            error={'context':'volt','msg':'voltage not found!!!'}
-            socket.emit("errors",error)
-        print(data["head"],datetime.datetime.now().strftime("%H:%M:%S"))
+
+        # print(data["head"],datetime.datetime.now().strftime("%H:%M:%S")) #use this for monitoring status
         # print(data["head"],datetime.datetime.now())
+        # print(data["head"],datetime.datetime.now())
+        try:
+            if vehicle.commands.next >= 6 and servo_flag == False:
+                servo_flag=True
+                socket.emit('payloadDrop',1)
+                print("package dropped iosndfidnsf sdif nsianfo nasfoidn saoifnoid snafiodnsoaifniosdaniofgnsdaiogndsiognipasndgpimsadpogmsapogpodsamgopdsmgpomsdapogmsapodmgposmadgpo!")
+        except Exception as e:
+            pass
+        try:
+            if vehicle.armed and vehicle.location.global_relative_frame.alt >= 5 and not flight_flag:
+                socket.emit("flight_start", 1)
+                flight_flag=True
+                print("mission started, drone on its way",loc.alt)
+        except Exception as e:
+            pass
+    
+        try:
+            if not vehicle.armed and flight_flag:
+                socket.emit("flight_start",0)
+                print("mission completed")
+                flight_flag=False
+        except Exception as e:
+            pass
         if not vehicle.armed:
             time1=0
         # print(datetime.datetime.now())
@@ -448,6 +489,7 @@ def send_data():
                 except Exception as e:
                     pass
         socket.emit('data',data) #send data to server
+        # print("data", data)
         socket.on('homePosition',send_home)
         socket.on('getMission',on_mission_download) #keep listening for download command for mission from server
         socket.on('initiateFlight',on_initiate_flight)#keep listening for fly command from user
@@ -456,7 +498,7 @@ def send_data():
         except Exception:
             print ("error positions")
         try:
-            socket.on('RTL',set_mode_RTL)
+            socket.on('rtl',set_mode_RTL)
         except Exception:
             pass
         try:
@@ -464,7 +506,7 @@ def send_data():
         except Exception:
             pass
         try:
-            socket.on('LAND',set_mode_LAND)
+            socket.on('land',set_mode_LAND)
         except Exception:
             pass
         socket.on('reconnect', on_reconnect)
